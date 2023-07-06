@@ -82,6 +82,9 @@ class AmberUpdateCoordinator(DataUpdateCoordinator):
         self._api = api
         self.site_id = site_id
 
+    # def update_usage_data(self) -> dict[str, dict(str, Any)]:
+    # pass
+
     def update_price_data(self) -> dict[str, dict[str, Any]]:
         """Update callback."""
 

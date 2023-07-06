@@ -73,6 +73,24 @@ class AmberSensor(CoordinatorEntity[AmberUpdateCoordinator], SensorEntity):
         )
 
 
+class AmberUsageSensor(AmberSensor):
+    """Amber power usage sensor."""
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current usage in kwh."""
+        interval = self.coordinator.data[self.entity_description.key][self.channel_type]
+
+        # if interval.channel_type == ChannelType.FEED_IN:
+        # return format_cents_to_dollars(interval.per_kwh) * -1
+        return format_cents_to_dollars(interval.kwh)
+
+    @property
+    def extra_state_attributes(self) -> Mapping[str, Any] | None:
+        """Return extra attributes for AmberUsageSensor."""
+        return super().extra_state_attributes
+
+
 class AmberPriceSensor(AmberSensor):
     """Amber Price Sensor."""
 
