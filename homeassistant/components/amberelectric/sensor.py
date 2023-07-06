@@ -89,7 +89,7 @@ class AmberUsageSensor(AmberSensor):
             return None
 
         last_usage = usage[0]
-        # self.last_reset = last_usage.start_time
+        self._attr_last_reset = last_usage.start_time
         return last_usage.kwh
 
     @property
@@ -254,12 +254,12 @@ async def async_setup_entry(
     description = SensorEntityDescription(
         key="usage",
         name=f"{entry.title} - Usage",
-        native_unit_of_measurement=USAGE_UNIT,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL,
         device_class=SensorDeviceClass.ENERGY,
         icon=ICONS["general"],
     )
-    entities.append(AmberUsageSensor(coordinator, description, ChannelType.GENERAL))
+    entities.append(AmberUsageSensor(coordinator, description, "general"))
 
     for channel_type in current:
         description = SensorEntityDescription(

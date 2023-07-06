@@ -36,3 +36,6 @@ async def async_setup_entry(
 
 Seems `homeassistant/components/amberelectric/coordinator.py` has the logic for querying the API.
 
+---
+
+I think what I need to do next is figure out how to reset the last_reset value for the sensor
