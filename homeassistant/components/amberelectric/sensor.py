@@ -83,12 +83,10 @@ class AmberUsageSensor(AmberSensor):
         """Return the current usage in kwh."""
         usage = self.coordinator.data[self.entity_description.key][self.channel_type]
 
-        # if interval.channel_type == ChannelType.FEED_IN:
-        # return format_cents_to_dollars(interval.per_kwh) * -1
         if len(usage) < 1:
             return None
 
-        last_usage = usage[0]
+        last_usage = usage[-1]
         self._attr_last_reset = last_usage.start_time
         return last_usage.kwh
 
