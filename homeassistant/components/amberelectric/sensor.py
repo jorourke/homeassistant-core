@@ -15,6 +15,7 @@ from amberelectric.model.current_interval import CurrentInterval
 from amberelectric.model.forecast_interval import ForecastInterval
 
 from homeassistant.components.sensor import (
+    SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
     SensorStateClass,
@@ -35,6 +36,7 @@ ICONS = {
 }
 
 UNIT = f"{CURRENCY_DOLLAR}/{UnitOfEnergy.KILO_WATT_HOUR}"
+USAGE_UNIT = f"{UnitOfEnergy.KILO_WATT_HOUR}"
 
 
 def format_cents_to_dollars(cents: float) -> float:
@@ -79,11 +81,16 @@ class AmberUsageSensor(AmberSensor):
     @property
     def native_value(self) -> float | None:
         """Return the current usage in kwh."""
-        interval = self.coordinator.data[self.entity_description.key][self.channel_type]
+        usage = self.coordinator.data[self.entity_description.key][self.channel_type]
 
         # if interval.channel_type == ChannelType.FEED_IN:
         # return format_cents_to_dollars(interval.per_kwh) * -1
-        return format_cents_to_dollars(interval.kwh)
+        if len(usage) < 1:
+            return None
+
+        last_usage = usage[0]
+        # self.last_reset = last_usage.start_time
+        return last_usage.kwh
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
@@ -230,6 +237,8 @@ async def async_setup_entry(
 
     current: dict[str, CurrentInterval] = coordinator.data["current"]
     forecasts: dict[str, list[ForecastInterval]] = coordinator.data["forecasts"]
+    # Note, we have dict[str, Usage] from line 159 in coordinator:
+    #         result["usage"]["general"] = usage_data
 
     entities: list = []
     for channel_type in current:
@@ -241,6 +250,16 @@ async def async_setup_entry(
             icon=ICONS[channel_type],
         )
         entities.append(AmberPriceSensor(coordinator, description, channel_type))
+
+    description = SensorEntityDescription(
+        key="usage",
+        name=f"{entry.title} - Usage",
+        native_unit_of_measurement=USAGE_UNIT,
+        state_class=SensorStateClass.TOTAL,
+        device_class=SensorDeviceClass.ENERGY,
+        icon=ICONS["general"],
+    )
+    entities.append(AmberUsageSensor(coordinator, description, ChannelType.GENERAL))
 
     for channel_type in current:
         description = SensorEntityDescription(

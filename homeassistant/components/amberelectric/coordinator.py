@@ -1,7 +1,7 @@
 """Amber Electric Coordinator."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from amberelectric import ApiException
@@ -11,6 +11,7 @@ from amberelectric.model.channel import ChannelType
 from amberelectric.model.current_interval import CurrentInterval
 from amberelectric.model.forecast_interval import ForecastInterval
 from amberelectric.model.interval import Descriptor
+from amberelectric.model.usage import Usage
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -82,13 +83,31 @@ class AmberUpdateCoordinator(DataUpdateCoordinator):
         self._api = api
         self.site_id = site_id
 
-    # def update_usage_data(self) -> dict[str, dict(str, Any)]:
-    # pass
+    def get_usage_data(self) -> list[Usage]:
+        """Update usage data."""
+
+        data: list[Usage] = []
+
+        try:
+            data = self._api.get_usage(
+                self.site_id,
+                start_date=date.today() + timedelta(days=-1),
+                end_date=date.today(),
+            )
+        except ApiException as api_exception:
+            raise UpdateFailed("Missing usage data, skipping update") from api_exception
+
+        usage = data
+
+        LOGGER.debug("Fetched new Amber usage data: %s", usage)
+
+        return usage
 
     def update_price_data(self) -> dict[str, dict[str, Any]]:
         """Update callback."""
 
         result: dict[str, dict[str, Any]] = {
+            "usage": {},
             "current": {},
             "descriptors": {},
             "forecasts": {},
@@ -135,6 +154,9 @@ class AmberUpdateCoordinator(DataUpdateCoordinator):
             result["forecasts"]["feed_in"] = [
                 interval for interval in forecasts if is_feed_in(interval)
             ]
+
+        usage_data = self.get_usage_data()
+        result["usage"]["general"] = usage_data
 
         LOGGER.debug("Fetched new Amber data: %s", data)
         return result
